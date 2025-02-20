@@ -4,12 +4,18 @@ import { poweredBy } from 'hono/powered-by';
 import IndexPage from '~/ui/pages/_index';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { hashIpAddress, nanoid, parseUserAgent } from '~/utils';
+import {
+  convertIso2ToIso3,
+  hashIpAddress,
+  nanoid,
+  parseUserAgent,
+} from '~/utils';
 import { basicAuthMiddleware, drizzleMiddleware } from '~/middleware';
 import { HonoApp, UrlRow } from '~/types';
 import { clicks } from '~/schema';
 import AnalyticsPage from '~/ui/pages/analytics';
-import { count } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
+import AnalyticsDetailPage from '~/ui/pages/analytics.$key';
 
 const app = new Hono<HonoApp>();
 
@@ -47,7 +53,7 @@ app.get('/analytics', basicAuthMiddleware, async (c) => {
     .from(clicks)
     .groupBy(clicks.country);
 
-  return c.html(
+  return c.render(
     <AnalyticsPage
       totalClicks={totalClicks}
       totalShortenedUrls={list.keys.length}
@@ -57,8 +63,157 @@ app.get('/analytics', basicAuthMiddleware, async (c) => {
   );
 });
 
+app.get('/analytics/:key', basicAuthMiddleware, async (c) => {
+  const key = c.req.param('key');
+  const originalUrl = await c.env.KV_STORE.get(`url:${key}`);
+
+  if (!originalUrl) return c.notFound();
+
+  const clicksStats = await c.var.db
+    .select({ count: count(), clickedAt: clicks.clickedAt })
+    .from(clicks)
+    .where(
+      and(
+        eq(clicks.shortUrl, key),
+        sql`${clicks.clickedAt} >= date('now', '-30 days')`
+      )
+    )
+    .groupBy(sql`strftime('%Y-%m-%d', ${clicks.clickedAt})`)
+    .orderBy(sql`strftime('%Y-%m-%d', ${clicks.clickedAt}) asc`);
+
+  const clicksMap: Map<string, number> = new Map();
+  for (const clickStat of clicksStats) {
+    const dateOnly = clickStat.clickedAt.split(' ')[0];
+    clicksMap.set(dateOnly, clickStat.count);
+  }
+
+  const last30DaysClicks: string[] = [];
+  const today = new Date();
+  for (let i = 0; i < 30; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const dateString = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    last30DaysClicks.push(dateString);
+  }
+
+  const filledClicksStats: { label: string; count: number }[] = [];
+  for (const dateString of last30DaysClicks) {
+    const count = clicksMap.get(dateString) || 0;
+    filledClicksStats.push({ label: dateString, count });
+  }
+
+  filledClicksStats.reverse();
+
+  const browserStats = await c.var.db
+    .select({ count: count(), browser: clicks.browser })
+    .from(clicks)
+    .where(
+      and(
+        eq(clicks.shortUrl, key),
+        sql`${clicks.clickedAt} >= date('now', '-30 days')`
+      )
+    )
+    .groupBy(clicks.browser);
+
+  const osStats = await c.var.db
+    .select({ count: count(), os: clicks.os })
+    .from(clicks)
+    .where(
+      and(
+        eq(clicks.shortUrl, key),
+        sql`${clicks.clickedAt} >= date('now', '-30 days')`
+      )
+    )
+    .groupBy(clicks.os);
+
+  const mappedOsStats = osStats.map((d) => ({
+    count: d.count,
+    label: d.os ?? 'Unknown',
+  }));
+
+  const deviceStats = await c.var.db
+    .select({ count: count(), isMobile: clicks.isMobile })
+    .from(clicks)
+    .where(
+      and(
+        eq(clicks.shortUrl, key),
+        sql`${clicks.clickedAt} >= date('now', '-30 days')`
+      )
+    )
+    .groupBy(clicks.isMobile);
+
+  const mappedDeviceStats = deviceStats.map((d) => ({
+    count: d.count,
+    label: d.isMobile ? 'Mobile' : 'Desktop',
+  }));
+
+  const refererStats = await c.var.db
+    .select({ count: count(), referer: clicks.referer })
+    .from(clicks)
+    .where(
+      and(
+        eq(clicks.shortUrl, key),
+        sql`${clicks.clickedAt} >= date('now', '-30 days')`
+      )
+    )
+    .groupBy(clicks.referer);
+
+  const mappedRefererStats = refererStats.map((d) => ({
+    count: d.count,
+    label: d.referer ?? 'Direct',
+  }));
+
+  const countryStats = await c.var.db
+    .select({ count: count(), country: clicks.country })
+    .from(clicks)
+    .where(
+      and(
+        eq(clicks.shortUrl, key),
+        sql`${clicks.clickedAt} >= date('now', '-30 days')`
+      )
+    )
+    .groupBy(clicks.country);
+
+  const mappedCountryStats: Record<
+    string,
+    { fillKey: string; clicks: number }
+  > = {};
+
+  const total = countryStats.reduce((acc, cur) => acc + cur.count, 0);
+
+  for (const stat of countryStats) {
+    if (stat.country) {
+      let fillKey: string;
+      if (stat.count >= 0.75 * total) {
+        fillKey = 'high';
+      } else if (stat.count > 0.25 * total) {
+        fillKey = 'medium';
+      } else if (stat.count > 0) {
+        fillKey = 'low';
+      } else {
+        fillKey = '';
+      }
+
+      mappedCountryStats[convertIso2ToIso3(stat.country)] = {
+        fillKey,
+        clicks: stat.count,
+      };
+    }
+  }
+
+  return c.render(
+    <AnalyticsDetailPage
+      clicksStats={filledClicksStats}
+      osStats={mappedOsStats}
+      deviceStats={mappedDeviceStats}
+      refererStats={mappedRefererStats}
+      countryStats={mappedCountryStats}
+    />
+  );
+});
+
 app.get('/', basicAuthMiddleware, (c) => {
-  return c.html(<IndexPage />);
+  return c.render(<IndexPage />);
 });
 
 app.post(
@@ -82,7 +237,7 @@ app.post(
     (result, c) => {
       if (!result.success) {
         const message = result.error.issues[0].message;
-        return c.html(<IndexPage error={message} />);
+        return c.render(<IndexPage error={message} />);
       }
     }
   ),
@@ -93,7 +248,7 @@ app.post(
     if (shortUrl) {
       const existing = await c.env.KV_STORE.get(`url:${shortUrl}`);
       if (existing) {
-        return c.html(<IndexPage error='Short URL already exists' />);
+        return c.render(<IndexPage error='Short URL already exists' />);
       }
       key = shortUrl;
     } else {
@@ -111,7 +266,7 @@ app.post(
     await c.env.KV_STORE.put(`url:${key}`, longUrl);
     const domain = new URL(c.req.url).origin;
     const newUrl = `${domain}/${key}`;
-    return c.html(<IndexPage success={newUrl} />);
+    return c.render(<IndexPage success={newUrl} />);
   }
 );
 

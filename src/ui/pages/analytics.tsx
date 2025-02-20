@@ -18,6 +18,7 @@ const AnalyticsPage: FC<Props> = ({
   const formatNumber = (num: number) => {
     return num.toLocaleString('en-US');
   };
+
   return (
     <Layout title='Analytics'>
       <div class='container overflow-auto'>
@@ -53,7 +54,8 @@ const AnalyticsPage: FC<Props> = ({
               <th scope='col'>#</th>
               <th scope='col'>Short Url</th>
               <th scope='col'>Original Url</th>
-              <th scope='col'>Total Clicks</th>
+              <th scope='col'>Total</th>
+              <th scope='col'></th>
             </tr>
           </thead>
           <tbody>
@@ -64,9 +66,17 @@ const AnalyticsPage: FC<Props> = ({
                   <a href={`/analytics/${d.shortUrl}`}>{d.shortUrl}</a>
                 </td>
                 <td>
-                  <a href={d.originalUrl}>{d.originalUrl}</a>
+                  <a href={d.originalUrl}>
+                    {d.originalUrl.slice(0, 24)}
+                    {d.originalUrl.length > 24 ? '...' : ''}
+                  </a>
                 </td>
                 <td>{d.clicksCount}</td>
+                <td>
+                  <a href={`/${d.shortUrl}`} target='_blank'>
+                    Visit
+                  </a>
+                </td>
               </tr>
             ))}
           </tbody>
