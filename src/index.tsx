@@ -6,8 +6,10 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { hashIpAddress, nanoid, parseUserAgent } from '~/utils';
 import { basicAuthMiddleware, drizzleMiddleware } from '~/middleware';
-import { HonoApp } from '~/types';
+import { HonoApp, UrlRow } from '~/types';
 import { clicks } from '~/schema';
+import AnalyticsPage from '~/ui/pages/analytics';
+import { count } from 'drizzle-orm';
 
 const app = new Hono<HonoApp>();
 
@@ -15,8 +17,44 @@ app.use(poweredBy());
 app.use(logger());
 app.use(drizzleMiddleware);
 
-app.get('/analytics', basicAuthMiddleware, (c) => {
-  return c.text('Hello Analytics Page!');
+app.get('/analytics', basicAuthMiddleware, async (c) => {
+  const list = await c.env.KV_STORE.list({ prefix: 'url:' });
+  const data: UrlRow[] = [];
+
+  for (const key of list.keys) {
+    const parsedKey = key.name.split(':')[1];
+    const originalUrl = await c.env.KV_STORE.get(key.name);
+    const count = await c.env.KV_STORE.get(`count:${parsedKey}`);
+    if (!originalUrl) continue;
+
+    data.push({
+      shortUrl: parsedKey,
+      originalUrl,
+      clicksCount: Number(count ?? 0),
+    });
+  }
+
+  data.sort((a, b) => b.clicksCount - a.clicksCount);
+
+  const totalClicksQuery = await c.var.db
+    .select({ count: count() })
+    .from(clicks);
+
+  const totalClicks = totalClicksQuery[0].count;
+
+  const totalCountryQuery = await c.var.db
+    .selectDistinct({ country: clicks.country })
+    .from(clicks)
+    .groupBy(clicks.country);
+
+  return c.html(
+    <AnalyticsPage
+      totalClicks={totalClicks}
+      totalShortenedUrls={list.keys.length}
+      totalCountry={totalCountryQuery.length}
+      data={data}
+    />
+  );
 });
 
 app.get('/', basicAuthMiddleware, (c) => {

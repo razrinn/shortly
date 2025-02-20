@@ -13,3 +13,9 @@ export interface HonoApp {
     db: DrizzleD1Database;
   };
 }
+
+export interface UrlRow {
+  shortUrl: string;
+  originalUrl: string;
+  clicksCount: number;
+}

@@ -7,7 +7,7 @@ interface Props {
 
 export const Layout = ({ title, children }: Props) => {
   return html`<!DOCTYPE html>
-    <html>
+    <html data-bs-theme="dark">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -26,7 +26,13 @@ export const Layout = ({ title, children }: Props) => {
         </style>
       </head>
       <body>
-        ${children}
+        <div class="container h-100 d-flex flex-column">
+          <div class="d-flex gap-2 mb-4">
+            <a href="/">Home</a>
+            <a href="/analytics">Analytics</a>
+          </div>
+          ${children}
+        </div>
 
         <script
           src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

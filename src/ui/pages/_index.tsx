@@ -9,7 +9,7 @@ interface Props {
 const IndexPage: FC<Props> = ({ success, error }) => {
   return (
     <Layout title='Home'>
-      <div class='h-100 d-flex align-items-center gap-4 justify-content-center flex-column'>
+      <div class='flex-fill d-flex align-items-center gap-4 justify-content-center flex-column'>
         <h1>Shorty - Open-source URL Shortener</h1>
         <form action='/' method='post'>
           <div class='row g-2'>
@@ -42,7 +42,6 @@ const IndexPage: FC<Props> = ({ success, error }) => {
             </div>
           </div>
         </form>
-        <a href='/analytics'>Analytics</a>
         {success && (
           <div class='alert alert-success' role='alert'>
             Short URL{' '}

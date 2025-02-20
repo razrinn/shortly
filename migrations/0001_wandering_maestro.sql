@@ -1,0 +1,1 @@
+CREATE INDEX `short_url` ON `clicks` (`short_url`);

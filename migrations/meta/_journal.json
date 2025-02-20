@@ -8,6 +8,13 @@
       "when": 1740043801270,
       "tag": "0000_easy_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1740046838812,
+      "tag": "0001_wandering_maestro",
+      "breakpoints": true
     }
   ]
 }
