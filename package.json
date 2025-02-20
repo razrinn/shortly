@@ -1,8 +1,8 @@
 {
   "name": "shortly-url",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "dev": "wrangler dev --live-reload src/index.tsx",
+    "deploy": "wrangler deploy src/index.tsx --minify"
   },
   "dependencies": {
     "hono": "^4.7.2"
