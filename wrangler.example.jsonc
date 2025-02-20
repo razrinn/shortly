@@ -25,7 +25,8 @@
     {
       "binding": "DB",
       "database_name": "your-database-name",
-      "database_id": "your-database-id"
+      "database_id": "your-database-id",
+      "migrations_dir": "./migrations"
     }
   ]
   // "ai": {

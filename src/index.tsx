@@ -1,38 +1,19 @@
 import { Hono } from 'hono';
-import { basicAuth } from 'hono/basic-auth';
-import { createMiddleware } from 'hono/factory';
 import { logger } from 'hono/logger';
 import { poweredBy } from 'hono/powered-by';
 import IndexPage from '~/ui/pages/_index';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { nanoid } from '~/utils';
+import { hashIpAddress, nanoid, parseUserAgent } from '~/utils';
+import { basicAuthMiddleware, drizzleMiddleware } from '~/middleware';
+import { HonoApp } from '~/types';
+import { clicks } from '~/schema';
 
-interface Bindings {
-  ADMIN_USERNAME: string;
-  ADMIN_PASSWORD: string;
-  KV_STORE: KVNamespace;
-  DB: D1Database;
-}
-
-const basicAuthMiddleware = createMiddleware<{ Bindings: Bindings }>(
-  async (c, next) => {
-    basicAuth({
-      verifyUser(username, password) {
-        return (
-          username === c.env.ADMIN_USERNAME && password === c.env.ADMIN_PASSWORD
-        );
-      },
-    });
-
-    await next();
-  }
-);
-
-const app = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<HonoApp>();
 
 app.use(poweredBy());
 app.use(logger());
+app.use(drizzleMiddleware);
 
 app.get('/analytics', basicAuthMiddleware, (c) => {
   return c.text('Hello Analytics Page!');
@@ -72,7 +53,7 @@ app.post(
     let key: string;
 
     if (shortUrl) {
-      const existing = await c.env.KV_STORE.get(`short:${shortUrl}`);
+      const existing = await c.env.KV_STORE.get(`url:${shortUrl}`);
       if (existing) {
         return c.html(<IndexPage error='Short URL already exists' />);
       }
@@ -81,7 +62,7 @@ app.post(
       let generatedKey: string;
       while (true) {
         generatedKey = nanoid();
-        const existing = await c.env.KV_STORE.get(`short:${generatedKey}`);
+        const existing = await c.env.KV_STORE.get(`url:${generatedKey}`);
         if (!existing) {
           break;
         }
@@ -89,7 +70,7 @@ app.post(
       key = generatedKey;
     }
 
-    await c.env.KV_STORE.put(`short:${key}`, longUrl);
+    await c.env.KV_STORE.put(`url:${key}`, longUrl);
     const domain = new URL(c.req.url).origin;
     const newUrl = `${domain}/${key}`;
     return c.html(<IndexPage success={newUrl} />);
@@ -98,13 +79,36 @@ app.post(
 
 app.get('/:key', async (c) => {
   const key = c.req.param('key');
-  const longUrl = await c.env.KV_STORE.get(`short:${key}`);
+  const longUrl = await c.env.KV_STORE.get(`url:${key}`);
 
   if (!longUrl) {
     return c.notFound();
   }
 
-  // TODO: add analytics
+  const currentCount = await c.env.KV_STORE.get(`count:${key}`);
+  await c.env.KV_STORE.put(
+    `count:${key}`,
+    String(Number(currentCount || 0) + 1)
+  );
+
+  const { browser, isMobile, os } = parseUserAgent(
+    c.req.header('user-agent') || ''
+  );
+
+  const ipAddress = c.req.header('CF-Connecting-IP');
+  const hashedIp = await hashIpAddress(ipAddress);
+
+  await c.var.db.insert(clicks).values({
+    shortUrl: key,
+    referer: c.req.header('referer'),
+    userAgent: c.req.header('user-agent'),
+    country: (c.req.raw.cf?.country as string) ?? 'Unknown',
+    region: (c.req.raw.cf?.region as string) ?? 'Unknown',
+    hashedIp,
+    browser,
+    isMobile,
+    os,
+  });
 
   return c.redirect(longUrl);
 });
