@@ -2,7 +2,6 @@
   "name": "shortly-url",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
     "db:gen": "drizzle-kit generate --dialect sqlite --out migrations --schema src/schema.ts",
     "db:migrate": "wrangler d1 migrations apply DB"
   },
