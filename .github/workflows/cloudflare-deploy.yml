@@ -19,13 +19,18 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --minify
           preCommands: |
             echo "Copying wrangler.jsonc..."
             echo "${{ secrets.CLOUDFLARE_WRANGLER_CONFIG }}" | base64 --decode > wrangler.jsonc
 
             echo "Migrating database..."
             pnpm run db:migrate
+
+          command: |
+            ls
+            cat wrangler.jsonc
+            deploy --minify
+
           postCommands: |
             echo "*** post commands ***"
         env:
