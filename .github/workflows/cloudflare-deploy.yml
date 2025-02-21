@@ -22,7 +22,7 @@ jobs:
           command: deploy --minify
           preCommands: |
             echo "Copying wrangler.jsonc..."
-            echo ${{ secrets.CLOUDFLARE_WRANGLER_CONFIG }} > wrangler.jsonc
+            echo "${{ secrets.CLOUDFLARE_WRANGLER_CONFIG }}" > wrangler.jsonc
 
             echo "Migrating database..."
             pnpm run db:migrate
