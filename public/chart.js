@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     theme: {
       mode: 'dark',
     },
+    colors: ['#0D6EFD', '#073577', '#7AA8FF', '#025FE2', '#E0E0E0'],
     chart: {
       height: 345,
       type: 'area',
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     theme: {
       mode: 'dark',
     },
+    colors: ['#0D6EFD', '#073577', '#7AA8FF', '#025FE2', '#E0E0E0'],
     chart: {
       type: 'pie',
       toolbar: {
@@ -65,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     theme: {
       mode: 'dark',
     },
+    colors: ['#0D6EFD', '#073577', '#7AA8FF', '#025FE2', '#E0E0E0'],
     chart: {
       type: 'pie',
       toolbar: {
@@ -91,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     theme: {
       mode: 'dark',
     },
+    colors: ['#0D6EFD', '#073577', '#7AA8FF', '#025FE2', '#E0E0E0'],
     chart: {
       height: 345,
       type: 'bar',
@@ -126,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     theme: {
       mode: 'dark',
     },
+    colors: ['#0D6EFD', '#073577', '#7AA8FF', '#025FE2', '#E0E0E0'],
     chart: {
       type: 'pie',
       toolbar: {
@@ -153,14 +158,14 @@ document.addEventListener('DOMContentLoaded', () => {
     projection: 'mercator',
     fills: {
       defaultFill: '#E0E0E0',
-      high: '#0e8078',
-      medium: '#4ecdc5',
-      low: '#afdedb',
+      high: '#073577',
+      medium: '#0D6EFD',
+      low: '#7AA8FF',
     },
     data: window.countryChartData,
     geographyConfig: {
       popupOnHover: true,
-      highlightFillColor: '#afdedb',
+      highlightFillColor: '#7AA8FF',
       popupTemplate: function (geo, data) {
         return `<div class="hoverinfo hoverinfo-custom">${
           geo.properties.name

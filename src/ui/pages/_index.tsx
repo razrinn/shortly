@@ -10,6 +10,12 @@ const IndexPage: FC<Props> = ({ success, error }) => {
   return (
     <Layout title='Home'>
       <div class='flex-fill d-flex align-items-center gap-4 justify-content-center flex-column'>
+        <img
+          src='/icon-512.png'
+          alt='Shortly URL Logo'
+          width={128}
+          height={128}
+        />
         <h1>Shorty - Open-source URL Shortener</h1>
         <form action='/' method='post'>
           <div class='row g-2'>
