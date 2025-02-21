@@ -27,9 +27,6 @@ jobs:
             echo "Migrating database..."
             pnpm run db:migrate
             echo "Migration complete."
-          command: |
-            deploy --minify
-
           postCommands: |
             echo "*** post commands ***"
         env:
