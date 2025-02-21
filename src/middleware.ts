@@ -11,16 +11,12 @@ export const drizzleMiddleware = createMiddleware<HonoApp>(async (c, next) => {
   await next();
 });
 
-export const basicAuthMiddleware = createMiddleware<HonoApp>(
-  async (c, next) => {
-    basicAuth({
-      verifyUser(username, password) {
-        return (
-          username === c.env.ADMIN_USERNAME && password === c.env.ADMIN_PASSWORD
-        );
-      },
-    });
-
-    await next();
-  }
-);
+export const basicAuthMiddleware = () =>
+  basicAuth({
+    async verifyUser(username, password, c) {
+      if (username !== c.env.ADMIN_USERNAME) return false;
+      return (
+        username === c.env.ADMIN_USERNAME && password === c.env.ADMIN_PASSWORD
+      );
+    },
+  });

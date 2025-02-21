@@ -23,7 +23,7 @@ app.use(poweredBy());
 app.use(logger());
 app.use(drizzleMiddleware);
 
-app.get('/analytics', basicAuthMiddleware, async (c) => {
+app.get('/analytics', basicAuthMiddleware(), async (c) => {
   const list = await c.env.KV_STORE.list({ prefix: 'url:' });
   const data: UrlRow[] = [];
 
@@ -63,7 +63,7 @@ app.get('/analytics', basicAuthMiddleware, async (c) => {
   );
 });
 
-app.get('/analytics/:key', basicAuthMiddleware, async (c) => {
+app.get('/analytics/:key', basicAuthMiddleware(), async (c) => {
   const key = c.req.param('key');
   const originalUrl = await c.env.KV_STORE.get(`url:${key}`);
 
@@ -115,6 +115,11 @@ app.get('/analytics/:key', basicAuthMiddleware, async (c) => {
     )
     .groupBy(clicks.browser);
 
+  const mappedBrowserStats = browserStats.map((d) => ({
+    count: d.count,
+    label: d.browser ?? 'Unknown',
+  }));
+
   const osStats = await c.var.db
     .select({ count: count(), os: clicks.os })
     .from(clicks)
@@ -156,7 +161,8 @@ app.get('/analytics/:key', basicAuthMiddleware, async (c) => {
         sql`${clicks.clickedAt} >= date('now', '-30 days')`
       )
     )
-    .groupBy(clicks.referer);
+    .groupBy(clicks.referer)
+    .orderBy(desc(count()));
 
   const mappedRefererStats = refererStats.map((d) => ({
     count: d.count,
@@ -208,17 +214,18 @@ app.get('/analytics/:key', basicAuthMiddleware, async (c) => {
       deviceStats={mappedDeviceStats}
       refererStats={mappedRefererStats}
       countryStats={mappedCountryStats}
+      browserStats={mappedBrowserStats}
     />
   );
 });
 
-app.get('/', basicAuthMiddleware, (c) => {
+app.get('/', basicAuthMiddleware(), (c) => {
   return c.render(<IndexPage />);
 });
 
 app.post(
   '/',
-  basicAuthMiddleware,
+  basicAuthMiddleware(),
   zValidator(
     'form',
     z.object({
@@ -290,10 +297,12 @@ app.get('/:key', async (c) => {
 
   const ipAddress = c.req.header('CF-Connecting-IP');
   const hashedIp = await hashIpAddress(ipAddress);
+  const referer = c.req.header('referer');
+  const refererOrigin = referer ? new URL(referer).origin : undefined;
 
   await c.var.db.insert(clicks).values({
     shortUrl: key,
-    referer: c.req.header('referer'),
+    referer: refererOrigin,
     userAgent: c.req.header('user-agent'),
     country: (c.req.raw.cf?.country as string) ?? 'Unknown',
     region: (c.req.raw.cf?.region as string) ?? 'Unknown',

@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mode: 'dark',
     },
     chart: {
+      height: 345,
       type: 'area',
       toolbar: {
         show: false,
@@ -91,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mode: 'dark',
     },
     chart: {
+      height: 345,
       type: 'bar',
       toolbar: {
         show: false,
@@ -119,6 +121,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   refererChart.render();
 
+  const browserChartData = window.browserChartData || {};
+  const browserChartOptions = {
+    theme: {
+      mode: 'dark',
+    },
+    chart: {
+      type: 'pie',
+      toolbar: {
+        show: false,
+      },
+      theme: 'dark',
+    },
+    tooltip: {
+      theme: 'dark',
+    },
+    series: browserChartData.data,
+    labels: browserChartData.label,
+  };
+
+  const browserChart = new ApexCharts(
+    document.querySelector('#browser-chart'),
+    browserChartOptions
+  );
+
+  browserChart.render();
+
   const map = new Datamap({
     element: document.getElementById('country-visit-chart'),
     responsive: true,
@@ -136,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
       popupTemplate: function (geo, data) {
         return `<div class="hoverinfo hoverinfo-custom">${
           geo.properties.name
-        }: ${data ? data.clicks + ' clicks' : 'No data'}</div>`;
+        }: ${data ? data.clicks : 'No data'}</div>`;
       },
     },
   });

@@ -2,11 +2,14 @@ import { html } from 'hono/html';
 import { FC, useMemo } from 'hono/jsx';
 import { Layout } from '~/ui/components/layout';
 
+type GenericStats = { count: number; label: string };
+
 interface Props {
-  clicksStats: { count: number; label: string }[];
-  osStats: { count: number; label: string }[];
-  deviceStats: { count: number; label: string }[];
-  refererStats: { count: number; label: string }[];
+  clicksStats: GenericStats[];
+  osStats: GenericStats[];
+  deviceStats: GenericStats[];
+  refererStats: GenericStats[];
+  browserStats: GenericStats[];
   countryStats: Record<string, { fillKey: string; clicks: number }>;
 }
 
@@ -16,6 +19,7 @@ const AnalyticsDetailPage: FC<Props> = ({
   deviceStats,
   refererStats,
   countryStats,
+  browserStats,
 }) => {
   const clicksCount = useMemo(
     () =>
@@ -38,42 +42,91 @@ const AnalyticsDetailPage: FC<Props> = ({
     [deviceStats]
   );
 
+  const browserCount = useMemo(
+    () => browserStats.map((d) => d.count),
+    [browserStats]
+  );
+  const browserLabel = useMemo(
+    () => browserStats.map((d) => d.label),
+    [browserStats]
+  );
+
   const refererCount = useMemo(
     () => refererStats.map((d) => ({ x: d.label, y: d.count })),
     [refererStats]
   );
 
+  const scripts = html` <script src="/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/datamaps/0.5.9/datamaps.world.min.js"
+      integrity="sha512-ShMIwoBgGctXjiRZubJipPPimOnfP7JgsipylJsQ0mlQaHltZJM5MK4u/7QaBd2bWwDDQ93eDdorzUBC3PJBOA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>`;
+
   return (
-    <Layout title='Analytics Detail' scripts={html`<script src="/chart.js" />`}>
+    <Layout title='Analytics Detail' scripts={scripts}>
       <div class='container'>
-        <div class='row justify-content-center mb-4'>
-          <div class='col-sm-6'>
-            <h2>Total Clicks (last 30 days)</h2>
-            <div id='total-clicks-chart' />
+        <h1 class='mb-4'>Last 30 days Analytics</h1>
+        <div class='row mb-4'>
+          <div class='col-sm-4 mb-4'>
+            <div class='card'>
+              <div class='card-header'>
+                <h2>Total Clicks</h2>
+              </div>
+              <div class='card-body'>
+                <div id='total-clicks-chart' />
+              </div>
+            </div>
+          </div>
+          <div class='col-sm-4 mb-4'>
+            <div class='card'>
+              <div class='card-header'>
+                <h2>Referer</h2>
+              </div>
+              <div class='card-body'>
+                <div id='referer-chart' />
+              </div>
+            </div>
+          </div>
+          <div class='col-sm-4 mb-4'>
+            <div class='card'>
+              <div class='card-header'>
+                <h2>Visit by Country</h2>
+              </div>
+              <div class='card-body'>
+                <div id='country-visit-chart' style={{ height: '360px' }} />
+              </div>
+            </div>
           </div>
         </div>
-        <div class='row justify-content-center mb-4'>
-          <div class='col-sm-6'>
-            <h2>Visit by Country (last 30 days)</h2>
-            <div id='country-visit-chart' style={{ height: '500px' }} />
+        <div class='row mb-4'>
+          <div class='col-sm-4 mb-4'>
+            <div class='card'>
+              <div class='card-header'>Browser Used</div>
+              <div class='card-body'>
+                <div id='browser-chart' />
+              </div>
+            </div>
           </div>
-        </div>
-        <div class='row justify-content-center mb-4'>
-          <div class='col-sm-6'>
-            <h2>Referer Data (last 30 days)</h2>
-            <div id='referer-chart' />
+          <div class='col-sm-4 mb-4'>
+            <div class='card'>
+              <div class='card-header'>OS Used</div>
+              <div class='card-body'>
+                <div id='os-chart' />
+              </div>
+            </div>
           </div>
-        </div>
-        <div class='row justify-content-center mb-4'>
-          <div class='col-sm-6'>
-            <h2>Browser Used (last 30 days)</h2>
-            <div id='os-chart' />
-          </div>
-        </div>
-        <div class='row justify-content-center mb-4'>
-          <div class='col-sm-6'>
-            <h2>Device Used (last 30 days)</h2>
-            <div id='device-chart' />
+          <div class='col-sm-4 mb-4'>
+            <div class='card'>
+              <div class='card-header'>Device Used</div>
+              <div class='card-body'>
+                <div id='device-chart' />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -89,6 +142,10 @@ const AnalyticsDetailPage: FC<Props> = ({
             window.deviceChartData = ${JSON.stringify({
               data: deviceCount,
               label: deviceLabel,
+            })};
+            window.browserChartData = ${JSON.stringify({
+              data: browserCount,
+              label: browserLabel,
             })};
             window.refererChartData = ${JSON.stringify(refererCount)};
             window.countryChartData = ${JSON.stringify(countryStats)};
