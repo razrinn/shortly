@@ -30,6 +30,9 @@ jobs:
             echo "Migration complete."
           postCommands: |
             echo "*** post commands ***"
+          secrets: |
+            ADMIN_USERNAME
+            ADMIN_PASSWORD
         env:
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
