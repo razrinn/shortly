@@ -23,12 +23,13 @@ jobs:
             echo "Copying wrangler.jsonc..."
             echo "${{ secrets.CLOUDFLARE_WRANGLER_CONFIG }}" | base64 --decode > wrangler.jsonc
 
+            ls
+            cat wrangler.jsonc
+
             echo "Migrating database..."
             pnpm run db:migrate
 
           command: |
-            ls
-            cat wrangler.jsonc
             deploy --minify
 
           postCommands: |
