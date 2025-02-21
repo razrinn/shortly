@@ -11,6 +11,10 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Wrangler Config
+        run: |
+          echo "Copying wrangler.jsonc..."
+          echo "${{ secrets.CLOUDFLARE_WRANGLER_CONFIG }}" | base64 --decode > wrangler.jsonc
       - uses: pnpm/action-setup@v4
         with:
           version: 9
@@ -20,15 +24,9 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           preCommands: |
-            echo "Copying wrangler.jsonc..."
-            echo "${{ secrets.CLOUDFLARE_WRANGLER_CONFIG }}" | base64 --decode > wrangler.jsonc
-
-            ls
-            cat wrangler.jsonc
-
             echo "Migrating database..."
             pnpm run db:migrate
-
+            echo "Migration complete."
           command: |
             deploy --minify
 
