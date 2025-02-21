@@ -28,6 +28,8 @@ jobs:
             echo "Migrating database..."
             pnpm run db:migrate --remote
             echo "Migration complete."
+          command: |
+            deploy --minify
           postCommands: |
             echo "*** post commands ***"
           secrets: |
