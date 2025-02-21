@@ -26,7 +26,7 @@ jobs:
           wranglerVersion: '3.109.2'
           preCommands: |
             echo "Migrating database..."
-            pnpm run db:migrate
+            pnpm run db:migrate -- --remote
             echo "Migration complete."
           postCommands: |
             echo "*** post commands ***"
